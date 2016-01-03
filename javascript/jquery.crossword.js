@@ -192,7 +192,7 @@
 
                         var entrySolved = ($.inArray(puzz.data[i].answer, solved) !== -1);
                         var clueDone = (entrySolved ? ' class="clue-done" ' : '');
-                        
+
 						// while we're in here, add clues to DOM!
 						$('#' + puzz.data[i].orientation).append('<li tabindex="1" data-position="' + i + '" value="' + puzz.data[i].position + '" ' + clueDone + '>' + puzz.data[i].clue + '</li>');
 					}
@@ -239,7 +239,7 @@
 						hasOffset = false,
 						positionOffset = 0;
 
-					// Iterate the entries.
+					// Add input boxes.
                     for (var x = 1, p = entryCount; x <= entryCount; ++x) {
 
                         // check if POSITION property of the entry on current go-round is same as previous.
@@ -251,29 +251,50 @@
                             };
                         }
 
-                        // Check if entry is already solved.
-                        var answer = puzz.data[x - 1].answer;
-                        var entrySolved = ($.inArray(answer, solved) !== -1);
-                        
                         // Iterate the entry cells.
                         for (var i = 0; i < entries[x - 1].length; ++i) {
-							light = $(puzzCells +'[data-coords="' + entries[x - 1][i] + '"]');
-                            
-                            var cellDone = '';
-                            if (entrySolved) {
-                                cellDone += ' value="' + answer[i] + '" ';
-                                cellDone += ' class="done" ';
-                                cellDone += ' disabled="" ';
-                            }
+							light = $(puzzCells + '[data-coords="' + entries[x - 1][i] + '"]');
 
                             if($(light).empty()){
 								$(light)
 									.addClass('entry-' + (x - positionOffset) + ' position-' + (x - 1))
-									.append('<input maxlength="1" val="" type="text" tabindex="-1" ' + cellDone + ' />');
+									.append('<input maxlength="1" value="" type="text" tabindex="-1" />');
 							}
 						};
 
 					};
+
+					// Fill in solved words.
+                    for (var x = 1, p = entryCount; x <= entryCount; ++x) {
+
+                        // Check if entry is already solved.
+                        var answer = puzz.data[x - 1].answer;
+                        var entrySolved = ($.inArray(answer, solved) !== -1);
+                        var inputbox;
+                        var tdbox;
+
+                        // Iterate the entry cells.
+                        for (var i = 0; i < entries[x - 1].length; ++i) {
+                            tdbox = $(puzzCells + '[data-coords="' + entries[x - 1][i] + '"]');
+                            inputbox = $('input', tdbox);
+
+                            if (entrySolved) {
+                                $(inputbox)
+                                    .val(answer[i])
+                                    .addClass('done')
+                                    .prop('disabled', true);
+                            }
+
+                            // Flag if crossed.
+                            var cross = (util.getClasses($(tdbox), 'position').length > 1);
+                            if (cross) {
+                                $(inputbox).addClass('cross');
+                            }
+                        }
+                    };
+
+                    // Enable cross inputs.
+                    $('input.cross').removeProp('disabled');
 
 					// Put entry number in first 'light' of each entry, skipping it if already present.
                     var currentPosition = 0;
@@ -327,16 +348,23 @@
 					if(valToCheck === currVal){
 						$('.active')
 							.addClass('done')
-							.removeClass('active')
                             .prop('disabled', true);
+
+                        // Re-enable cross inputs.
+                        $('.active.cross').removeProp('disabled');
+
+                        // Deactivate active inputs.
+						$('.active').removeClass('active');
 
 						$('.clues-active').addClass('clue-done');
 
 						solved.push(valToCheck);
-                        
+
                         $('.puzzle-solved').val(solved.join(','));
-                        
+
 						solvedToggle = true;
+
+
 						return;
 					}
 
